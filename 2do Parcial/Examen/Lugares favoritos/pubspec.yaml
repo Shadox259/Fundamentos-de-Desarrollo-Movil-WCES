@@ -1,0 +1,24 @@
+name: lugares_app
+description: Lugares favoritos con mapa
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  supabase_flutter: ^2.18.0
+  flutter_map: ^7.0.0
+  latlong2: ^0.9.1
+  geolocator: ^12.0.0
+  image_picker: ^1.1.0
+  shared_preferences: ^2.2.3
+  uuid: ^4.4.0
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
