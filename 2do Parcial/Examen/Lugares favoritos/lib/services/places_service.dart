@@ -1,6 +1,9 @@
-import 'dart:io';
+import 'dart:typed_data';
+
+import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
+
 import '../models/place_model.dart';
 import '../supabase_config.dart';
 
@@ -34,14 +37,40 @@ class PlacesService {
     await supabase.from('places').delete().eq('id', id);
   }
 
-  static Future<String> uploadPhoto(File file) async {
+  static Future<String> uploadPhoto(XFile file) async {
     final uid = supabase.auth.currentUser!.id;
-    final ext = file.path.split('.').last;
-    final fileName = '${const Uuid().v4()}.$ext';
-    final path = '$uid/$fileName';
+    final extension = file.name.contains('.')
+        ? file.name.split('.').last.toLowerCase()
+        : 'jpg';
 
-    await supabase.storage.from('place-photos').upload(path, file);
+    final fileName = '${const Uuid().v4()}.$extension';
+    final path = '$uid/$fileName';
+    final Uint8List bytes = await file.readAsBytes();
+
+    await supabase.storage.from('place-photos').uploadBinary(
+          path,
+          bytes,
+          fileOptions: FileOptions(
+            contentType: _mimeFromExtension(extension),
+            upsert: false,
+          ),
+        );
 
     return supabase.storage.from('place-photos').getPublicUrl(path);
+  }
+
+  static String _mimeFromExtension(String ext) {
+    switch (ext) {
+      case 'png':
+        return 'image/png';
+      case 'gif':
+        return 'image/gif';
+      case 'webp':
+        return 'image/webp';
+      case 'jpg':
+      case 'jpeg':
+      default:
+        return 'image/jpeg';
+    }
   }
 }

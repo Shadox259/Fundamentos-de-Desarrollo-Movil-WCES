@@ -1,9 +1,10 @@
-import 'dart:io';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:latlong2/latlong.dart';
 
 import '../models/place_model.dart';
 import '../services/places_service.dart';
@@ -26,7 +27,8 @@ class _PlaceFormScreenState extends State<PlaceFormScreen> {
 
   String _categoria = 'otros';
   LatLng _punto = const LatLng(19.4326, -99.1332);
-  File? _fotoNueva;
+  XFile? _fotoNueva;
+  Uint8List? _fotoBytes;
   String? _fotoUrlActual;
   bool _guardando = false;
 
@@ -68,7 +70,11 @@ class _PlaceFormScreenState extends State<PlaceFormScreen> {
       maxWidth: 1200,
     );
     if (picked != null) {
-      setState(() => _fotoNueva = File(picked.path));
+      final bytes = await picked.readAsBytes();
+      setState(() {
+        _fotoNueva = picked;
+        _fotoBytes = bytes;
+      });
     }
   }
 
@@ -78,7 +84,6 @@ class _PlaceFormScreenState extends State<PlaceFormScreen> {
     try {
       final uid = supabase.auth.currentUser!.id;
 
-      // Subir foto si hay una nueva
       String? urlFoto = _fotoUrlActual;
       if (_fotoNueva != null) {
         urlFoto = await PlacesService.uploadPhoto(_fotoNueva!);
@@ -198,33 +203,33 @@ class _PlaceFormScreenState extends State<PlaceFormScreen> {
                     onTap: _elegirFoto,
                     child: Container(
                       height: 160,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade200,
-                        borderRadius: BorderRadius.circular(12),
-                        image: _fotoNueva != null
-                            ? DecorationImage(
-                                image: FileImage(_fotoNueva!),
-                                fit: BoxFit.cover,
-                              )
-                            : (_fotoUrlActual != null
-                                ? DecorationImage(
-                                    image: NetworkImage(_fotoUrlActual!),
-                                    fit: BoxFit.cover,
-                                  )
-                                : null),
-                      ),
-                      child: (_fotoNueva == null && _fotoUrlActual == null)
-                          ? const Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.add_a_photo, size: 40),
-                                  SizedBox(height: 8),
-                                  Text('Añadir foto'),
-                                ],
-                              ),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade200,
+                      borderRadius: BorderRadius.circular(12),
+                      image: _fotoBytes != null
+                          ? DecorationImage(
+                              image: MemoryImage(_fotoBytes!),
+                              fit: BoxFit.cover,
                             )
-                          : null,
+                          : (_fotoUrlActual != null
+                              ? DecorationImage(
+                                  image: NetworkImage(_fotoUrlActual!),
+                                  fit: BoxFit.cover,
+                                )
+                              : null),
+                    ),
+                    child: (_fotoBytes == null && _fotoUrlActual == null)
+                        ? const Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.add_a_photo, size: 40),
+                                SizedBox(height: 8),
+                                Text('Añadir foto'),
+                              ],
+                            ),
+                          )
+                        : null,
                     ),
                   ),
                   const SizedBox(height: 16),
